@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:background="@color/bg_dark">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -31,7 +30,6 @@
             android:textStyle="bold"/>
     </LinearLayout>
 
-    <!-- Scan progress bar -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="match_parent"
@@ -41,7 +39,6 @@
         android:progressTint="@color/accent"
         android:visibility="gone"/>
 
-    <!-- Status card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -60,7 +57,6 @@
             android:lineSpacingMultiplier="1.5"/>
     </LinearLayout>
 
-    <!-- Instructions card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -89,14 +85,72 @@
             android:lineSpacingMultiplier="1.5"/>
     </LinearLayout>
 
-    <!-- Device list -->
+    <!-- Manual IP entry -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/card_bg"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:padding="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ENTER IP MANUALLY"
+            android:textColor="@color/text_accent"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Find on Firestick: Settings → My Fire TV → About → Network"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/etManualIp"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:hint="e.g. 192.168.4.26"
+                android:textColor="@color/white"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="14sp"
+                android:inputType="numberDecimal"
+                android:background="@color/bg_surface"
+                android:paddingHorizontal="10dp"
+                android:layout_marginEnd="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManual"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:text="CONNECT"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                app:backgroundTint="@color/accent"
+                app:cornerRadius="6dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvDevices"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"/>
 
-    <!-- Scan button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnRescan"
         style="@style/BtnPrimary"
