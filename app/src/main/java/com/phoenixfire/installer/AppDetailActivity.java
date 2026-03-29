@@ -64,8 +64,7 @@ public class AppDetailActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(String appName) {
                         mainHandler.post(() -> {
-                            tvStatus.setText("✅ " + appName +
-                                " installed successfully on your Firestick!");
+                            tvStatus.setText("✅ " + appName + " installed successfully on your Firestick!");
                             btnInstall.setText("✓ INSTALLED");
                             btnInstall.setEnabled(false);
                         });
@@ -80,7 +79,7 @@ public class AppDetailActivity extends AppCompatActivity {
                             progressBar.setVisibility(View.GONE);
                         });
                     }
-                }, getCacheDir());
+                }, getCacheDir(), getApplicationContext());
         });
     }
 }
