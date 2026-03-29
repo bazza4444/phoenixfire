@@ -3,10 +3,12 @@ package com.phoenixfire.installer;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.*;
+import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.button.MaterialButton;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -14,10 +16,10 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private AppAdapter adapter;
     private List<AppModel> appList;
-    private Button btnScanDevices;
-    private TextView tvDeviceStatus;
+    private MaterialButton btnScanDevices;
+    private TextView tvDeviceStatus, tvChangeDevice, tvAppCount;
+    private View layoutDeviceStatus;
     private FirestickDevice selectedDevice;
-    private LinearLayout headerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,13 +29,18 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         btnScanDevices = findViewById(R.id.btnScanDevices);
         tvDeviceStatus = findViewById(R.id.tvDeviceStatus);
-        headerLayout = findViewById(R.id.headerLayout);
+        tvChangeDevice = findViewById(R.id.tvChangeDevice);
+        tvAppCount = findViewById(R.id.tvAppCount);
+        layoutDeviceStatus = findViewById(R.id.layoutDeviceStatus);
 
         appList = AppListParser.loadApps(this);
+        tvAppCount.setText(appList.size() + " apps");
 
         adapter = new AppAdapter(appList, app -> {
             if (selectedDevice == null) {
-                Toast.makeText(this, "Please find your Firestick first!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this,
+                    "Find your Firestick first!", Toast.LENGTH_SHORT).show();
+                launchScan();
                 return;
             }
             Intent intent = new Intent(this, AppDetailActivity.class);
@@ -44,16 +51,19 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("app_package", app.getPackageName());
             intent.putExtra("device_ip", selectedDevice.getIpAddress());
             intent.putExtra("device_port", selectedDevice.getPort());
+            intent.putExtra("device_name", selectedDevice.getName());
             startActivity(intent);
         });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        btnScanDevices.setOnClickListener(v -> {
-            Intent intent = new Intent(this, DeviceScanActivity.class);
-            startActivityForResult(intent, 100);
-        });
+        btnScanDevices.setOnClickListener(v -> launchScan());
+        tvChangeDevice.setOnClickListener(v -> launchScan());
+    }
+
+    private void launchScan() {
+        startActivityForResult(new Intent(this, DeviceScanActivity.class), 100);
     }
 
     @Override
@@ -64,9 +74,9 @@ public class MainActivity extends AppCompatActivity {
             int port = data.getIntExtra("device_port", 5555);
             String name = data.getStringExtra("device_name");
             selectedDevice = new FirestickDevice(ip, name, port);
-            tvDeviceStatus.setText("🔥 Connected: " + name);
-            tvDeviceStatus.setVisibility(View.VISIBLE);
-            btnScanDevices.setText("Change Device");
+            tvDeviceStatus.setText("Connected: " + name);
+            layoutDeviceStatus.setVisibility(View.VISIBLE);
+            btnScanDevices.setVisibility(View.GONE);
         }
     }
 }

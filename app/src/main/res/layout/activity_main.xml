@@ -1,74 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_dark">
 
-    <!-- Header -->
+    <!-- Professional Header -->
     <LinearLayout
-        android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/fire_orange"
+        android:background="@drawable/header_gradient"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:gravity="center">
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
+        android:paddingHorizontal="20dp"
+        android:elevation="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🔥 PHOENIX FIRE"
-            android:textColor="@color/white"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Firestick App Installer"
-            android:textColor="#FFE0C0"
-            android:textSize="13sp"
-            android:layout_marginTop="2dp"/>
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@drawable/ic_phoenix"
+                android:layout_marginEnd="12dp"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PHOENIX FIRE"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Firestick App Installer"
+                    android:textColor="#90CAF9"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Device Status Bar -->
-    <TextView
-        android:id="@+id/tvDeviceStatus"
+    <LinearLayout
+        android:id="@+id/layoutDeviceStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/fire_deep"
-        android:textColor="@color/white"
-        android:textSize="13sp"
-        android:padding="10dp"
-        android:gravity="center"
-        android:visibility="gone"/>
+        android:background="@color/bg_surface"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@color/success"
+            android:layout_marginEnd="8dp"/>
+
+        <TextView
+            android:id="@+id/tvDeviceStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"/>
+
+        <TextView
+            android:id="@+id/tvChangeDevice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CHANGE"
+            android:textColor="@color/text_accent"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:padding="4dp"/>
+    </LinearLayout>
 
     <!-- Scan Button -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnScanDevices"
+        style="@style/BtnPrimary"
         android:layout_width="match_parent"
         android:layout_height="52dp"
-        android:layout_margin="12dp"
-        android:text="🔍  Find My Firestick"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:backgroundTint="@color/fire_red"
-        android:stateListAnimator="@null"/>
+        android:layout_margin="16dp"
+        android:text="🔍  FIND MY FIRESTICK"
+        android:textSize="15sp"
+        app:cornerRadius="10dp"/>
 
-    <!-- Section label -->
-    <TextView
+    <!-- Section Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="AVAILABLE APPS"
-        android:textColor="@color/fire_orange"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.15"
-        android:paddingLeft="16dp"
-        android:paddingBottom="6dp"/>
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="16dp"
+            android:background="@color/accent"
+            android:layout_marginEnd="8dp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AVAILABLE APPS"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15"/>
+
+        <TextView
+            android:id="@+id/tvAppCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_accent"
+            android:textSize="11sp"/>
+    </LinearLayout>
 
     <!-- App List -->
     <androidx.recyclerview.widget.RecyclerView
@@ -77,6 +141,6 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingBottom="8dp"/>
+        android:paddingBottom="16dp"/>
 
 </LinearLayout>

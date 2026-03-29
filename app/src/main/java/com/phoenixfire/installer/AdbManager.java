@@ -1,26 +1,32 @@
 package com.phoenixfire.installer;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class AdbManager {
 
     private static final String TAG = "AdbManager";
     private static final int ADB_PORT = 5555;
-    private static final int SCAN_TIMEOUT_MS = 800;
+    private static final int SCAN_TIMEOUT_MS = 500;
 
     public interface ScanCallback {
         void onDeviceFound(FirestickDevice device);
@@ -34,57 +40,126 @@ public class AdbManager {
         void onError(String message);
     }
 
+    /**
+     * Gets the WiFi IP address by iterating ALL network interfaces
+     * and picking the one that is actually on WiFi (not loopback, not mobile).
+     * This fixes the bug where the wrong IP was returned.
+     */
+    private static String getWifiIpAddress(Context context) {
+        // Method 1: Use WifiManager directly
+        try {
+            WifiManager wifiManager = (WifiManager)
+                    context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifiManager != null && wifiManager.isWifiEnabled()) {
+                int ipInt = wifiManager.getConnectionInfo().getIpAddress();
+                if (ipInt != 0) {
+                    String ip = formatIp(ipInt);
+                    // Make sure it's not a loopback or weird address
+                    if (!ip.startsWith("127.") && !ip.equals("0.0.0.0")) {
+                        Log.d(TAG, "WiFi IP from WifiManager: " + ip);
+                        return ip;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "WifiManager failed: " + e.getMessage());
+        }
+
+        // Method 2: Iterate all network interfaces, find WiFi one (wlan0, eth0 etc)
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            if (interfaces != null) {
+                List<NetworkInterface> ifaceList = Collections.list(interfaces);
+                for (NetworkInterface iface : ifaceList) {
+                    String name = iface.getName().toLowerCase();
+                    // Skip loopback and mobile data interfaces
+                    if (iface.isLoopback()) continue;
+                    if (name.contains("rmnet") || name.contains("dummy") ||
+                        name.contains("p2p") || name.contains("tun") ||
+                        name.contains("ppp")) continue;
+
+                    // Look for WiFi/ethernet interfaces
+                    Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress addr = addresses.nextElement();
+                        if (!addr.isLoopbackAddress() && addr instanceof java.net.Inet4Address) {
+                            String ip = addr.getHostAddress();
+                            // Must be a private network range
+                            if (ip.startsWith("192.168.") || ip.startsWith("10.") ||
+                                ip.startsWith("172.")) {
+                                Log.d(TAG, "WiFi IP from interface " + name + ": " + ip);
+                                return ip;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "NetworkInterface scan failed: " + e.getMessage());
+        }
+
+        return null;
+    }
+
     public static void scanForDevices(Context context, ScanCallback callback) {
         new Thread(() -> {
             List<FirestickDevice> found = new ArrayList<>();
+
+            // Check WiFi is connected
             WifiManager wifiManager = (WifiManager)
                     context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
             if (wifiManager == null || !wifiManager.isWifiEnabled()) {
-                callback.onError("WiFi is not enabled. Connect to the same WiFi as your Firestick.");
+                callback.onError("WiFi is not enabled.\n\nPlease connect your phone to the same WiFi network as your Firestick.");
                 return;
             }
 
-            int ipInt = wifiManager.getConnectionInfo().getIpAddress();
-            if (ipInt == 0) {
-                callback.onError("Not connected to WiFi. Please connect and try again.");
+            String localIp = getWifiIpAddress(context);
+            if (localIp == null) {
+                callback.onError("Could not detect your WiFi IP address.\n\nMake sure your phone is connected to WiFi (not just mobile data).");
                 return;
             }
 
-            String localIp = formatIp(ipInt);
+            // Extract subnet (e.g. "192.168.4." from "192.168.4.26")
             String subnet = localIp.substring(0, localIp.lastIndexOf('.') + 1);
-            Log.d(TAG, "Scanning subnet: " + subnet + "0/24");
+            Log.d(TAG, "Scanning subnet: " + subnet + "0/24  (phone IP: " + localIp + ")");
 
             ExecutorService executor = Executors.newFixedThreadPool(50);
-            List<Future<?>> futures = new ArrayList<>();
 
             for (int i = 1; i <= 254; i++) {
                 final String ip = subnet + i;
-                futures.add(executor.submit(() -> {
+                executor.submit(() -> {
                     try {
                         Socket socket = new Socket();
                         socket.connect(new InetSocketAddress(ip, ADB_PORT), SCAN_TIMEOUT_MS);
                         socket.close();
-                        FirestickDevice device = new FirestickDevice(ip, "Amazon Fire TV (" + ip + ")", ADB_PORT);
+                        // Port 5555 open — likely a Fire TV with ADB enabled
+                        FirestickDevice device = new FirestickDevice(
+                                ip, "Amazon Fire TV (" + ip + ")", ADB_PORT);
                         synchronized (found) { found.add(device); }
                         callback.onDeviceFound(device);
+                        Log.d(TAG, "Found ADB device at: " + ip);
                     } catch (Exception ignored) {}
-                }));
+                });
             }
 
             executor.shutdown();
-            try { executor.awaitTermination(15, TimeUnit.SECONDS); } catch (InterruptedException ignored) {}
+            try { executor.awaitTermination(20, TimeUnit.SECONDS); }
+            catch (InterruptedException ignored) {}
+
             callback.onScanComplete(found);
         }).start();
     }
 
     public static void installApp(String deviceIp, int devicePort,
-                                   AppModel app, InstallCallback callback, File cacheDir) {
+                                   AppModel app, InstallCallback callback,
+                                   File cacheDir) {
         new Thread(() -> {
             try {
-                callback.onProgress(5, "Connecting to " + deviceIp + "...");
-                File apkFile = new File(cacheDir, app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
+                callback.onProgress(5, "Preparing download...");
+                File apkFile = new File(cacheDir,
+                        app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
 
+                // Download APK
                 callback.onProgress(10, "Downloading " + app.getName() + "...");
                 URL url = new URL(app.getApkUrl());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -94,7 +169,7 @@ public class AdbManager {
                 conn.connect();
 
                 if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    callback.onError("Download failed (HTTP " + conn.getResponseCode() + "). Check the APK URL.");
+                    callback.onError("Download failed (HTTP " + conn.getResponseCode() + ").\nCheck the APK URL is correct.");
                     return;
                 }
 
@@ -107,7 +182,7 @@ public class AdbManager {
                     fos.write(buf, 0, read);
                     downloaded += read;
                     if (total > 0) {
-                        int pct = 10 + (int)(65.0 * downloaded / total);
+                        int pct = 10 + (int)(60.0 * downloaded / total);
                         callback.onProgress(pct, "Downloading... " + formatSize(downloaded) + " / " + formatSize(total));
                     }
                 }
@@ -115,20 +190,23 @@ public class AdbManager {
                 inStream.close();
                 conn.disconnect();
 
-                callback.onProgress(78, "Sending to Firestick at " + deviceIp + "...");
+                // Install via ADB (dadb library)
+                callback.onProgress(75, "Connecting to Firestick at " + deviceIp + "...");
 
-                // dadb integration point:
-                // dadb.Dadb adb = dadb.Dadb.create(deviceIp, devicePort);
-                // adb.install(apkFile);
-                // adb.close();
-
-                for (int p = 78; p <= 95; p += 3) {
-                    Thread.sleep(300);
-                    callback.onProgress(p, "Installing on Firestick...");
+                try {
+                    dadb.Dadb dadb = dadb.Dadb.create(deviceIp, devicePort);
+                    callback.onProgress(82, "Installing " + app.getName() + " on Firestick...");
+                    dadb.install(apkFile);
+                    dadb.close();
+                    callback.onProgress(100, "Done!");
+                    callback.onSuccess(app.getName());
+                } catch (Exception adbEx) {
+                    Log.e(TAG, "ADB install failed: " + adbEx.getMessage());
+                    callback.onError("Could not install on Firestick.\n\nPlease check:\n" +
+                            "• ADB Debugging is ON (Settings → My Fire TV → Developer Options)\n" +
+                            "• Phone and Firestick are on same WiFi\n" +
+                            "• Error: " + adbEx.getMessage());
                 }
-                Thread.sleep(600);
-                callback.onProgress(100, "Done!");
-                callback.onSuccess(app.getName());
 
             } catch (Exception e) {
                 Log.e(TAG, "Install error", e);
@@ -138,7 +216,8 @@ public class AdbManager {
     }
 
     private static String formatIp(int ip) {
-        return (ip & 0xFF) + "." + ((ip >> 8) & 0xFF) + "." + ((ip >> 16) & 0xFF) + "." + ((ip >> 24) & 0xFF);
+        return (ip & 0xFF) + "." + ((ip >> 8) & 0xFF) + "."
+                + ((ip >> 16) & 0xFF) + "." + ((ip >> 24) & 0xFF);
     }
 
     private static String formatSize(int bytes) {

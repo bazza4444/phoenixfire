@@ -9,6 +9,7 @@ import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.button.MaterialButton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private RecyclerView rvDevices;
     private ProgressBar progressBar;
     private TextView tvStatus;
-    private Button btnRescan;
+    private MaterialButton btnRescan;
     private List<FirestickDevice> deviceList = new ArrayList<>();
     private DeviceAdapter deviceAdapter;
     private Handler mainHandler;
@@ -53,8 +54,9 @@ public class DeviceScanActivity extends AppCompatActivity {
         deviceList.clear();
         deviceAdapter.notifyDataSetChanged();
         progressBar.setVisibility(View.VISIBLE);
-        tvStatus.setText("🔍 Scanning your WiFi network for Fire TV devices...\n\nMake sure:\n• Firestick is on same WiFi\n• ADB Debugging is ON (Settings > My Fire TV > Developer Options)");
         btnRescan.setEnabled(false);
+        btnRescan.setText("Scanning...");
+        tvStatus.setText("Scanning your WiFi network for Firestick devices...\n\nThis may take up to 20 seconds.");
 
         AdbManager.scanForDevices(this, new AdbManager.ScanCallback() {
             @Override
@@ -62,6 +64,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                 mainHandler.post(() -> {
                     deviceList.add(device);
                     deviceAdapter.notifyItemInserted(deviceList.size() - 1);
+                    tvStatus.setText("Found " + deviceList.size() + " device(s) — tap to connect:");
                 });
             }
 
@@ -70,10 +73,17 @@ public class DeviceScanActivity extends AppCompatActivity {
                 mainHandler.post(() -> {
                     progressBar.setVisibility(View.GONE);
                     btnRescan.setEnabled(true);
+                    btnRescan.setText("🔍  SCAN AGAIN");
                     if (devices.isEmpty()) {
-                        tvStatus.setText("❌ No Fire TV devices found.\n\nPlease check:\n• Both devices on same WiFi\n• Go to Settings > My Fire TV > Developer Options\n• Enable ADB Debugging\n• Enable Apps from Unknown Sources");
+                        tvStatus.setText("No Firestick found.\n\n" +
+                            "Please check:\n" +
+                            "• Firestick and phone on same WiFi\n" +
+                            "• Settings → My Fire TV → Developer Options\n" +
+                            "• ADB Debugging → ON\n\n" +
+                            "Then tap Scan Again.");
                     } else {
-                        tvStatus.setText("✅ Found " + devices.size() + " device(s). Tap to connect:");
+                        tvStatus.setText("Found " + devices.size() +
+                            " device(s). Tap to connect:");
                     }
                 });
             }
@@ -83,7 +93,8 @@ public class DeviceScanActivity extends AppCompatActivity {
                 mainHandler.post(() -> {
                     progressBar.setVisibility(View.GONE);
                     btnRescan.setEnabled(true);
-                    tvStatus.setText("⚠️ " + message);
+                    btnRescan.setText("🔍  SCAN AGAIN");
+                    tvStatus.setText(message);
                 });
             }
         });

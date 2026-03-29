@@ -1,91 +1,146 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_dark">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/fire_orange"
+        android:background="@drawable/header_gradient"
+        android:orientation="horizontal"
         android:padding="16dp"
-        android:gravity="center">
+        android:gravity="center_vertical"
+        android:elevation="8dp">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_phoenix"
+            android:layout_marginEnd="12dp"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🔥 Install App"
+            android:text="Install App"
             android:textColor="@color/white"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold"/>
     </LinearLayout>
 
+    <!-- App Info Card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:background="@drawable/card_bg"
+        android:layout_margin="16dp"
         android:padding="20dp"
-        android:background="@color/card_bg"
-        android:layout_margin="12dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tvAppName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:textSize="24sp"
-            android:textStyle="bold"/>
+        <LinearLayout
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@color/bg_surface"
+            android:gravity="center"
+            android:layout_marginEnd="16dp">
 
-        <TextView
-            android:id="@+id/tvVersion"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/fire_orange"
-            android:textSize="13sp"
-            android:layout_marginTop="4dp"/>
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@drawable/ic_phoenix"
+                android:scaleType="fitCenter"/>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvDescription"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textColor="#BBBBBB"
-            android:textSize="14sp"
-            android:layout_marginTop="10dp"
-            android:lineSpacingMultiplier="1.4"/>
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvAppName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_accent"
+                android:textSize="13sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView
+                android:id="@+id/tvDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:layout_marginTop="6dp"
+                android:lineSpacingMultiplier="1.4"/>
+        </LinearLayout>
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:max="100"
-        android:progress="0"
-        android:progressTint="@color/fire_orange"
-        android:layout_marginHorizontal="12dp"
-        android:visibility="gone"/>
-
-    <TextView
-        android:id="@+id/tvStatus"
+    <!-- Progress Card -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#CCCCCC"
-        android:textSize="13sp"
-        android:padding="12dp"
-        android:gravity="center"
-        android:lineSpacingMultiplier="1.4"/>
+        android:background="@drawable/card_bg"
+        android:layout_marginHorizontal="16dp"
+        android:padding="16dp"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="@color/primary"
+            android:progressBackgroundTint="@color/bg_surface"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.4"
+            android:layout_marginTop="8dp"
+            android:text="Tap the button below to send this app to your Firestick"/>
+    </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
 
-    <Button
+    <!-- Target device info -->
+    <TextView
+        android:id="@+id/tvTargetDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:paddingBottom="8dp"/>
+
+    <!-- Install Button -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnInstall"
+        style="@style/BtnAccent"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:layout_margin="12dp"
-        android:text="🚀  Send to Firestick"
-        android:textColor="@color/white"
-        android:textSize="17sp"
-        android:textStyle="bold"
-        android:backgroundTint="@color/fire_red"
-        android:stateListAnimator="@null"/>
+        android:layout_margin="16dp"
+        android:text="🚀  SEND TO FIRESTICK"
+        android:textSize="16sp"
+        app:cornerRadius="10dp"/>
+
 </LinearLayout>

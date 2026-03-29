@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Outer glow ring -->
+    <path
+        android:pathData="M50,8 A42,42 0 1,1 49.9,8 Z"
+        android:fillColor="#1565C0"
+        android:fillAlpha="0.3"/>
+
+    <!-- Inner circle -->
+    <path
+        android:pathData="M50,15 A35,35 0 1,1 49.9,15 Z"
+        android:fillColor="#1565C0"/>
+
+    <!-- Phoenix wings left -->
+    <path
+        android:pathData="M50,50 C40,42 28,44 20,52 C28,48 38,50 50,58 Z"
+        android:fillColor="#FF9E40"/>
+
+    <!-- Phoenix wings right -->
+    <path
+        android:pathData="M50,50 C60,42 72,44 80,52 C72,48 62,50 50,58 Z"
+        android:fillColor="#FF9E40"/>
+
+    <!-- Phoenix body/flame -->
+    <path
+        android:pathData="M50,20 C50,20 42,32 42,44 C42,50 45,55 50,57 C55,55 58,50 58,44 C58,32 50,20 50,20 Z"
+        android:fillColor="#FF6D00"/>
+
+    <!-- Phoenix inner flame -->
+    <path
+        android:pathData="M50,30 C50,30 45,38 45,46 C45,50 47,54 50,55 C53,54 55,50 55,46 C55,38 50,30 50,30 Z"
+        android:fillColor="#FFAB40"/>
+
+    <!-- Phoenix core -->
+    <path
+        android:pathData="M50,40 C50,40 47,44 47,48 C47,50.5 48.3,52 50,52 C51.7,52 53,50.5 53,48 C53,44 50,40 50,40 Z"
+        android:fillColor="#FFF9C4"/>
+
+    <!-- Phoenix tail feathers -->
+    <path
+        android:pathData="M44,56 C38,62 34,70 36,76 C40,70 46,66 50,64 Z"
+        android:fillColor="#FF6D00"/>
+    <path
+        android:pathData="M56,56 C62,62 66,70 64,76 C60,70 54,66 50,64 Z"
+        android:fillColor="#FF6D00"/>
+    <path
+        android:pathData="M50,58 C50,65 50,72 50,78 C50,72 50,65 50,58 Z"
+        android:fillColor="#FFAB40"
+        android:strokeColor="#FFAB40"
+        android:strokeWidth="3"/>
+
+</vector>

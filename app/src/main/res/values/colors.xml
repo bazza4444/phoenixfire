@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="fire_orange">#FF6B00</color>
-    <color name="fire_red">#CC2200</color>
-    <color name="fire_deep">#8B1A00</color>
-    <color name="fire_yellow">#FFB300</color>
-    <color name="bg_dark">#1A1A1A</color>
-    <color name="card_bg">#2A2A2A</color>
+    <!-- Phoenix Fire Blue Theme -->
+    <color name="primary">#1565C0</color>
+    <color name="primary_dark">#0D47A1</color>
+    <color name="primary_light">#1976D2</color>
+    <color name="accent">#FF6D00</color>
+    <color name="accent_light">#FF9E40</color>
+
+    <color name="bg_dark">#0A0E1A</color>
+    <color name="bg_card">#111827</color>
+    <color name="bg_card2">#1C2333</color>
+    <color name="bg_surface">#162032</color>
+
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#90A4AE</color>
+    <color name="text_accent">#42A5F5</color>
+
+    <color name="success">#00C853</color>
+    <color name="error">#FF1744</color>
+    <color name="divider">#1E2D40</color>
+
+    <color name="btn_primary">#1565C0</color>
+    <color name="btn_danger">#C62828</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
 </resources>
