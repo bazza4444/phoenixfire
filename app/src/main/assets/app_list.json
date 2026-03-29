@@ -1,6 +1,15 @@
 {
   "apps": [
     {
+      "name": "Button Mapper (TEST - 3MB)",
+      "version": "2.20",
+      "description": "Small test app - only 3MB. Use this to test the installer works.",
+      "icon_url": "",
+      "apk_url": "https://github.com/flar2/ElementalX-m9/raw/master/buttonmapper.apk",
+      "package_name": "flar2.homebutton",
+      "category": "Test"
+    },
+    {
       "name": "Kodi",
       "version": "21.0",
       "description": "The ultimate open source media center. Stream anything, play local files, add-ons and more.",
@@ -12,7 +21,7 @@
     {
       "name": "VLC Media Player",
       "version": "3.5.4",
-      "description": "Free and open source video and audio player. Plays almost any file format.",
+      "description": "Free and open source video and audio player.",
       "icon_url": "",
       "apk_url": "https://get.videolan.org/vlc-android/3.5.4/VLC-Android-3.5.4-arm64-v8a.apk",
       "package_name": "org.videolan.vlc",
@@ -20,8 +29,8 @@
     },
     {
       "name": "SmartTube",
-      "version": "21.43",
-      "description": "YouTube for your TV with no ads, background play and 4K support.",
+      "version": "Latest",
+      "description": "YouTube for TV — no ads, background play, 4K.",
       "icon_url": "",
       "apk_url": "https://github.com/yuliskov/SmartTube/releases/download/latest/smarttube_stable.apk",
       "package_name": "com.liskovsoft.videomanager.antv",
@@ -30,7 +39,7 @@
     {
       "name": "Jellyfin",
       "version": "0.16.7",
-      "description": "Free and open source media server client. Your personal Netflix.",
+      "description": "Free open source media server client. Your personal Netflix.",
       "icon_url": "",
       "apk_url": "https://github.com/jellyfin/jellyfin-androidtv/releases/download/v0.16.7/jellyfin-androidtv-v0.16.7-release.apk",
       "package_name": "org.jellyfin.androidtv",
@@ -39,38 +48,11 @@
     {
       "name": "Downloader by AFTVnews",
       "version": "1.16",
-      "description": "The original sideloading app for Fire TV. Browse and download any APK.",
+      "description": "The original sideloading app for Fire TV.",
       "icon_url": "",
       "apk_url": "https://dl.aftvnews.com/Downloader.apk",
       "package_name": "com.esaba.downloader",
       "category": "Utilities"
-    },
-    {
-      "name": "Wolf Launcher",
-      "version": "Latest",
-      "description": "Clean, fast custom home screen launcher for Fire TV devices.",
-      "icon_url": "",
-      "apk_url": "https://github.com/leandroBorgesFerreira/WolfLauncher/releases/latest/download/wolflauncher.apk",
-      "package_name": "com.wolf.launcher",
-      "category": "Launchers"
-    },
-    {
-      "name": "X-Plore File Manager",
-      "version": "4.38",
-      "description": "Dual-pane file manager. Browse local files, USB drives and network shares.",
-      "icon_url": "",
-      "apk_url": "https://www.lonelycatgames.com/apps/xplore/xplore.apk",
-      "package_name": "com.lonelycatgames.Xplore",
-      "category": "Utilities"
-    },
-    {
-      "name": "Baz XCIPTV Test",
-      "version": "1.0",
-      "description": "Add your own app here — edit app_list.json on GitHub!",
-      "icon_url": "",
-      "apk_url": "https://wizardapk.co.uk/apks/uploads/BazzaXCIPTV.apk",
-      "package_name": "com.your.app",
-      "category": "My Apps"
     }
   ]
 }
