@@ -38,7 +38,7 @@ public class AdbManager {
     }
 
     private static String getWifiIpAddress(Context context) {
-        // Method 1: WifiManager
+        // Method 1: WifiManager - most reliable for WiFi
         try {
             WifiManager wifiManager = (WifiManager)
                     context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -46,7 +46,9 @@ public class AdbManager {
                 int ipInt = wifiManager.getConnectionInfo().getIpAddress();
                 if (ipInt != 0) {
                     String ip = formatIp(ipInt);
-                    if (!ip.startsWith("127.") && !ip.equals("0.0.0.0")) {
+                    // Exclude loopback, unassigned, and USB/emulator addresses
+                    if (!ip.startsWith("127.") && !ip.startsWith("10.0.2.")
+                            && !ip.equals("0.0.0.0")) {
                         Log.d(TAG, "WiFi IP from WifiManager: " + ip);
                         return ip;
                     }
@@ -56,26 +58,50 @@ public class AdbManager {
             Log.e(TAG, "WifiManager failed: " + e.getMessage());
         }
 
-        // Method 2: Network interfaces
+        // Method 2: Scan network interfaces - prefer 192.168.x.x first
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             if (interfaces != null) {
                 List<NetworkInterface> ifaceList = Collections.list(interfaces);
+
+                // First pass - look for 192.168.x.x or 172.x.x.x (most home networks)
                 for (NetworkInterface iface : ifaceList) {
                     String name = iface.getName().toLowerCase();
                     if (iface.isLoopback()) continue;
                     if (name.contains("rmnet") || name.contains("dummy") ||
                         name.contains("p2p") || name.contains("tun") ||
-                        name.contains("ppp")) continue;
+                        name.contains("ppp") || name.contains("usb") ||
+                        name.contains("rndis")) continue;
 
                     Enumeration<InetAddress> addresses = iface.getInetAddresses();
                     while (addresses.hasMoreElements()) {
                         InetAddress addr = addresses.nextElement();
                         if (!addr.isLoopbackAddress() && addr instanceof java.net.Inet4Address) {
                             String ip = addr.getHostAddress();
-                            if (ip.startsWith("192.168.") || ip.startsWith("10.") ||
-                                ip.startsWith("172.")) {
+                            if (ip.startsWith("192.168.") || ip.startsWith("172.")) {
                                 Log.d(TAG, "WiFi IP from interface " + name + ": " + ip);
+                                return ip;
+                            }
+                        }
+                    }
+                }
+
+                // Second pass - accept 10.x.x.x but exclude USB/emulator ranges
+                for (NetworkInterface iface : ifaceList) {
+                    String name = iface.getName().toLowerCase();
+                    if (iface.isLoopback()) continue;
+                    if (name.contains("rmnet") || name.contains("dummy") ||
+                        name.contains("p2p") || name.contains("tun") ||
+                        name.contains("ppp") || name.contains("usb") ||
+                        name.contains("rndis")) continue;
+
+                    Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress addr = addresses.nextElement();
+                        if (!addr.isLoopbackAddress() && addr instanceof java.net.Inet4Address) {
+                            String ip = addr.getHostAddress();
+                            if (ip.startsWith("10.") && !ip.startsWith("10.0.2.")) {
+                                Log.d(TAG, "WiFi IP (10.x) from interface " + name + ": " + ip);
                                 return ip;
                             }
                         }
@@ -102,7 +128,7 @@ public class AdbManager {
 
             String localIp = getWifiIpAddress(context);
             if (localIp == null) {
-                callback.onError("Could not detect your WiFi IP address.\n\nMake sure your phone is connected to WiFi.");
+                callback.onError("Could not detect your WiFi IP address.\n\nPlease use the manual IP entry box below.\n\nFind your Firestick IP at: Settings → My Fire TV → About → Network");
                 return;
             }
 
