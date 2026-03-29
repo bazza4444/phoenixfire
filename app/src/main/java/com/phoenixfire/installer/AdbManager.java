@@ -17,7 +17,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import dadb.AdbKeyPair;
 import dadb.Dadb;
@@ -27,7 +26,6 @@ public class AdbManager {
     private static final String TAG = "AdbManager";
     private static final int ADB_PORT = 5555;
     private static final int SCAN_TIMEOUT_MS = 400;
-    private static final int INSTALL_TIMEOUT_MINUTES = 5;
 
     public interface ScanCallback {
         void onDeviceFound(FirestickDevice device);
@@ -52,8 +50,6 @@ public class AdbManager {
         return AdbKeyPair.read(privateKey, publicKey);
     }
 
-    // ─── Scanner ─────────────────────────────────────────────────────────────
-
     private static List<String> getAllSubnets(Context context) {
         List<String> subnets = new ArrayList<>();
 
@@ -64,44 +60,48 @@ public class AdbManager {
                 int ipInt = wm.getConnectionInfo().getIpAddress();
                 if (ipInt != 0) {
                     String ip = formatIp(ipInt);
+                    Log.d(TAG, "WifiManager raw IP: " + ip);
                     if (!ip.startsWith("127.") && !ip.equals("0.0.0.0")
                             && !ip.startsWith("10.0.2.") && !ip.startsWith("10.0.3.")) {
                         String sub = ip.substring(0, ip.lastIndexOf('.') + 1);
                         if (!subnets.contains(sub)) subnets.add(sub);
-                        Log.d(TAG, "WifiManager subnet: " + sub);
                     }
                 }
             }
-        } catch (Exception e) { Log.e(TAG, "WifiManager: " + e.getMessage()); }
+        } catch (Exception e) { Log.e(TAG, "WM: " + e.getMessage()); }
 
         try {
-            for (NetworkInterface iface : Collections.list(
-                    NetworkInterface.getNetworkInterfaces())) {
-                if (iface.isLoopback()) continue;
-                String n = iface.getName().toLowerCase();
-                if (n.contains("dummy") || n.contains("tun") || n.contains("ppp")
-                        || n.contains("rmnet") || n.contains("usb")
-                        || n.contains("rndis") || n.contains("p2p")) continue;
+            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+            if (ifaces != null) {
+                for (NetworkInterface iface : Collections.list(ifaces)) {
+                    if (iface.isLoopback()) continue;
+                    String n = iface.getName().toLowerCase();
+                    if (n.contains("dummy") || n.contains("tun") || n.contains("ppp")
+                            || n.contains("rmnet") || n.contains("usb")
+                            || n.contains("rndis") || n.contains("p2p")) continue;
 
-                for (InetAddress a : Collections.list(iface.getInetAddresses())) {
-                    if (a.isLoopbackAddress() || !(a instanceof java.net.Inet4Address)) continue;
-                    String ip = a.getHostAddress();
-                    if (ip.startsWith("10.0.2.") || ip.startsWith("10.0.3.")) continue;
-                    if (ip.startsWith("192.168.") || ip.startsWith("172.")
-                            || ip.startsWith("10.")) {
-                        String sub = ip.substring(0, ip.lastIndexOf('.') + 1);
-                        if (!subnets.contains(sub)) {
-                            subnets.add(sub);
-                            Log.d(TAG, "Interface " + n + " subnet: " + sub);
+                    for (InetAddress a : Collections.list(iface.getInetAddresses())) {
+                        if (a.isLoopbackAddress()) continue;
+                        if (!(a instanceof java.net.Inet4Address)) continue;
+                        String ip = a.getHostAddress();
+                        if (ip.startsWith("10.0.2.") || ip.startsWith("10.0.3.")) continue;
+                        if (ip.startsWith("192.168.") || ip.startsWith("172.")
+                                || ip.startsWith("10.")) {
+                            String sub = ip.substring(0, ip.lastIndexOf('.') + 1);
+                            if (!subnets.contains(sub)) {
+                                subnets.add(sub);
+                                Log.d(TAG, "Added subnet " + sub + " from " + n);
+                            }
                         }
                     }
                 }
             }
-        } catch (Exception e) { Log.e(TAG, "Interfaces: " + e.getMessage()); }
+        } catch (Exception e) { Log.e(TAG, "Ifaces: " + e.getMessage()); }
 
-        // 192.168.x first
         subnets.sort((a, b) -> Boolean.compare(
                 !a.startsWith("192.168."), !b.startsWith("192.168.")));
+
+        Log.d(TAG, "Final subnets: " + subnets);
         return subnets;
     }
 
@@ -116,11 +116,10 @@ public class AdbManager {
 
             List<String> subnets = getAllSubnets(context);
             if (subnets.isEmpty()) {
-                callback.onError("Could not detect WiFi network.\n\nUse the manual IP box below.\n\nFind IP: Settings → My Fire TV → About → Network");
+                callback.onError("No WiFi network detected.\n\nPlease use the manual IP box below.\nFind IP on Firestick: Settings → My Fire TV → About → Network");
                 return;
             }
 
-            Log.d(TAG, "Scanning subnets: " + subnets);
             List<FirestickDevice> found = new ArrayList<>();
             List<String> seen = new ArrayList<>();
             ExecutorService ex = Executors.newFixedThreadPool(60);
@@ -141,7 +140,6 @@ public class AdbManager {
                                     ip, "Amazon Fire TV (" + ip + ")", ADB_PORT);
                             synchronized (found) { found.add(dev); }
                             callback.onDeviceFound(dev);
-                            Log.d(TAG, "Found: " + ip);
                         } catch (Exception ignored) {}
                     });
                 }
@@ -154,15 +152,13 @@ public class AdbManager {
         }).start();
     }
 
-    // ─── Installer ───────────────────────────────────────────────────────────
-
     public static void installApp(String deviceIp, int devicePort,
                                    AppModel app, InstallCallback callback,
                                    File cacheDir, Context context) {
         new Thread(() -> {
             try {
-                // 1. Download
-                callback.onProgress(5, "Preparing download...");
+                // 1. Download APK
+                callback.onProgress(5, "Starting download...");
                 File apkFile = new File(cacheDir,
                         app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
 
@@ -182,7 +178,7 @@ public class AdbManager {
                 }
                 String ct = conn.getContentType();
                 if (ct != null && ct.contains("text/html")) {
-                    callback.onError("That URL points to a webpage, not an APK.\nPlease use a direct download link.");
+                    callback.onError("That URL points to a webpage, not an APK.\nPlease use a direct download link in app_list.json.");
                     conn.disconnect();
                     return;
                 }
@@ -204,13 +200,13 @@ public class AdbManager {
                 fos.close();
                 in.close();
                 conn.disconnect();
-                Log.d(TAG, "Downloaded: " + apkFile.length() + " bytes");
+                Log.d(TAG, "APK downloaded: " + apkFile.length() + " bytes");
 
                 // 2. ADB keys
                 callback.onProgress(67, "Setting up secure connection...");
                 AdbKeyPair keyPair = getOrCreateKeyPair(context);
 
-                // 3. Connect
+                // 3. Connect to Firestick
                 callback.onProgress(70, "Connecting to Firestick at " + deviceIp + "...");
                 Dadb dadb;
                 try {
@@ -218,73 +214,46 @@ public class AdbManager {
                 } catch (Exception ce) {
                     callback.onError("Cannot connect to Firestick.\n\n" +
                         "If a popup appeared on Firestick — tap ALLOW and try again.\n\n" +
-                        "Make sure ADB Debugging is ON:\n" +
-                        "Settings → My Fire TV → Developer Options\n\n" +
+                        "Check: Settings → My Fire TV → Developer Options → ADB Debugging ON\n\n" +
                         "Error: " + ce.getMessage());
                     return;
                 }
 
-                // 4. Install with timeout + live progress ticks
-                callback.onProgress(73, "Sending " + app.getName() + " to Firestick...");
-
-                ExecutorService installEx = Executors.newSingleThreadExecutor();
-                final Exception[] err = {null};
-
-                Future<?> installFuture = installEx.submit(() -> {
-                    try {
-                        dadb.install(apkFile);
-                    } catch (Exception e) {
-                        err[0] = e;
-                    }
-                });
-
-                // Tick progress while waiting (73 → 97 over up to 5 min)
-                String[] ticks = {
-                    "Sending APK to Firestick...",
-                    "Installing on Firestick...",
-                    "Writing app to storage...",
-                    "Almost done, please wait...",
-                    "Finishing up..."
-                };
-                int tick = 0;
-                int pct = 73;
-                long deadline = System.currentTimeMillis() + INSTALL_TIMEOUT_MINUTES * 60 * 1000L;
-
-                while (!installFuture.isDone()) {
-                    Thread.sleep(2500);
-                    if (System.currentTimeMillis() > deadline) {
-                        installFuture.cancel(true);
-                        try { dadb.close(); } catch (Exception ignored) {}
-                        callback.onError("Install timed out after " + INSTALL_TIMEOUT_MINUTES
-                            + " minutes.\n\nThe Firestick may still be installing — "
-                            + "check your Firestick screen.");
-                        return;
-                    }
-                    if (pct < 97) pct++;
-                    callback.onProgress(pct, ticks[tick % ticks.length]);
-                    tick++;
+                // 4. Push APK file to Firestick storage
+                callback.onProgress(73, "Transferring APK to Firestick...");
+                String remotePath = "/data/local/tmp/phoenix_install.apk";
+                try {
+                    dadb.push(apkFile, remotePath, 0644, System.currentTimeMillis());
+                } catch (Exception pushEx) {
+                    try { dadb.close(); } catch (Exception ignored) {}
+                    callback.onError("Failed to transfer APK to Firestick.\n\nError: " + pushEx.getMessage());
+                    return;
                 }
-                installEx.shutdown();
+                callback.onProgress(85, "APK transferred! Running install...");
 
-                try { dadb.close(); } catch (Exception ignored) {}
-
-                if (err[0] != null) {
-                    throw err[0];
+                // 5. Install using shell pm install command
+                // Much more reliable than dadb.install() on Fire OS
+                try {
+                    dadb.shell("pm install -r " + remotePath);
+                    callback.onProgress(95, "Finalising...");
+                    Thread.sleep(1500);
+                    try { dadb.shell("rm " + remotePath); } catch (Exception ignored) {}
+                    dadb.close();
+                    callback.onProgress(100, "Done!");
+                    callback.onSuccess(app.getName());
+                } catch (Exception shellEx) {
+                    Log.e(TAG, "Shell install failed: " + shellEx.getMessage());
+                    try { dadb.shell("rm " + remotePath); } catch (Exception ignored) {}
+                    try { dadb.close(); } catch (Exception ignored) {}
+                    callback.onError("Install command failed.\n\nError: " + shellEx.getMessage());
                 }
-
-                callback.onProgress(100, "✅ Installed successfully!");
-                callback.onSuccess(app.getName());
 
             } catch (Exception e) {
                 Log.e(TAG, "Install error", e);
-                callback.onError("Install failed.\n\n" +
-                    "If a popup appeared on Firestick — tap ALLOW and try again.\n\n" +
-                    "Error: " + e.getMessage());
+                callback.onError("Error: " + e.getMessage());
             }
         }).start();
     }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private static String formatIp(int ip) {
         return (ip & 0xFF) + "." + ((ip >> 8) & 0xFF) + "."
