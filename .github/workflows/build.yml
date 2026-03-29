@@ -20,22 +20,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android SDK
-        run: |
-          sudo apt-get install -y wget unzip
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          unzip -q cmdtools.zip -d $HOME/android-sdk/cmdline-tools
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_ENV
-
-      - name: Accept Android SDK licenses & install build tools
-        run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
-
       - name: Install Gradle 8.2
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
@@ -43,18 +27,16 @@ jobs:
           echo "$HOME/gradle-8.2/bin" >> $GITHUB_PATH
 
       - name: Build Debug APK
-        run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          gradle assembleDebug --stacktrace --no-daemon
+        run: gradle assembleDebug --stacktrace --no-daemon
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Build Release APK
-        run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          gradle assembleRelease --stacktrace --no-daemon
+        run: gradle assembleRelease --stacktrace --no-daemon
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Sign Release APK
         uses: r0adkll/sign-android-release@v1
