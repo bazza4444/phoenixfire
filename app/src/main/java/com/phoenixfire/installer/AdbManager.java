@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import dadb.AdbKeyPair;
+import dadb.Dadb;
 
 public class AdbManager {
 
@@ -37,8 +39,28 @@ public class AdbManager {
         void onError(String message);
     }
 
+    /**
+     * Gets or creates the ADB key pair used to authenticate with the Firestick.
+     * Stored in the app's private files directory so it persists between sessions.
+     */
+    private static AdbKeyPair getOrCreateKeyPair(Context context) throws Exception {
+        File keyDir = new File(context.getFilesDir(), "adbkeys");
+        keyDir.mkdirs();
+        File privateKey = new File(keyDir, "adbkey");
+        File publicKey = new File(keyDir, "adbkey.pub");
+
+        if (!privateKey.exists() || !publicKey.exists()) {
+            Log.d(TAG, "Generating new ADB key pair...");
+            AdbKeyPair.generate(privateKey, publicKey);
+            Log.d(TAG, "ADB key pair generated successfully");
+        } else {
+            Log.d(TAG, "Using existing ADB key pair");
+        }
+
+        return AdbKeyPair.read(privateKey, publicKey);
+    }
+
     private static String getWifiIpAddress(Context context) {
-        // Method 1: WifiManager - most reliable for WiFi
         try {
             WifiManager wifiManager = (WifiManager)
                     context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -46,7 +68,6 @@ public class AdbManager {
                 int ipInt = wifiManager.getConnectionInfo().getIpAddress();
                 if (ipInt != 0) {
                     String ip = formatIp(ipInt);
-                    // Exclude loopback, unassigned, and USB/emulator addresses
                     if (!ip.startsWith("127.") && !ip.startsWith("10.0.2.")
                             && !ip.equals("0.0.0.0")) {
                         Log.d(TAG, "WiFi IP from WifiManager: " + ip);
@@ -58,13 +79,11 @@ public class AdbManager {
             Log.e(TAG, "WifiManager failed: " + e.getMessage());
         }
 
-        // Method 2: Scan network interfaces - prefer 192.168.x.x first
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             if (interfaces != null) {
                 List<NetworkInterface> ifaceList = Collections.list(interfaces);
 
-                // First pass - look for 192.168.x.x or 172.x.x.x (most home networks)
                 for (NetworkInterface iface : ifaceList) {
                     String name = iface.getName().toLowerCase();
                     if (iface.isLoopback()) continue;
@@ -86,7 +105,6 @@ public class AdbManager {
                     }
                 }
 
-                // Second pass - accept 10.x.x.x but exclude USB/emulator ranges
                 for (NetworkInterface iface : ifaceList) {
                     String name = iface.getName().toLowerCase();
                     if (iface.isLoopback()) continue;
@@ -128,7 +146,7 @@ public class AdbManager {
 
             String localIp = getWifiIpAddress(context);
             if (localIp == null) {
-                callback.onError("Could not detect your WiFi IP address.\n\nPlease use the manual IP entry box below.\n\nFind your Firestick IP at: Settings → My Fire TV → About → Network");
+                callback.onError("Could not detect your WiFi IP.\n\nPlease use the manual IP entry box below.\n\nFind your Firestick IP: Settings → My Fire TV → About → Network");
                 return;
             }
 
@@ -163,13 +181,14 @@ public class AdbManager {
 
     public static void installApp(String deviceIp, int devicePort,
                                    AppModel app, InstallCallback callback,
-                                   File cacheDir) {
+                                   File cacheDir, Context context) {
         new Thread(() -> {
             try {
                 callback.onProgress(5, "Preparing download...");
                 File apkFile = new File(cacheDir,
                         app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
 
+                // Download APK
                 callback.onProgress(10, "Downloading " + app.getName() + "...");
                 URL url = new URL(app.getApkUrl());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -179,7 +198,7 @@ public class AdbManager {
                 conn.connect();
 
                 if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    callback.onError("Download failed (HTTP " + conn.getResponseCode() + ").");
+                    callback.onError("Download failed (HTTP " + conn.getResponseCode() + ").\nCheck the APK URL is valid.");
                     return;
                 }
 
@@ -200,21 +219,29 @@ public class AdbManager {
                 inStream.close();
                 conn.disconnect();
 
-                callback.onProgress(75, "Connecting to Firestick at " + deviceIp + "...");
+                // Generate/load ADB key pair
+                callback.onProgress(72, "Preparing ADB keys...");
+                AdbKeyPair keyPair = getOrCreateKeyPair(context);
+
+                // Connect and install via ADB
+                callback.onProgress(76, "Connecting to Firestick at " + deviceIp + "...");
+                callback.onProgress(78, "⚠️ If prompted on your Firestick — tap ALLOW to authorise this device!");
 
                 try {
-                    dadb.Dadb connection = dadb.Dadb.create(deviceIp, devicePort);
-                    callback.onProgress(82, "Installing " + app.getName() + " on Firestick...");
+                    Dadb connection = Dadb.create(deviceIp, devicePort, keyPair);
+                    callback.onProgress(85, "Installing " + app.getName() + " on Firestick...");
                     connection.install(apkFile);
                     connection.close();
                     callback.onProgress(100, "Done!");
                     callback.onSuccess(app.getName());
                 } catch (Exception adbEx) {
                     Log.e(TAG, "ADB install failed: " + adbEx.getMessage());
-                    callback.onError("Could not install on Firestick.\n\nPlease check:\n" +
-                            "• ADB Debugging is ON\n" +
-                            "• Phone and Firestick on same WiFi\n" +
-                            "• Error: " + adbEx.getMessage());
+                    callback.onError("Could not install on Firestick.\n\n" +
+                            "If your Firestick showed an 'Allow ADB debugging' popup — tap ALLOW and try again.\n\n" +
+                            "Also check:\n" +
+                            "• ADB Debugging is ON (Settings → My Fire TV → Developer Options)\n" +
+                            "• Phone and Firestick on same WiFi\n\n" +
+                            "Error: " + adbEx.getMessage());
                 }
 
             } catch (Exception e) {
