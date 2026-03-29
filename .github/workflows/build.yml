@@ -20,16 +20,39 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      - name: Install Android SDK
+        run: |
+          sudo apt-get install -y wget unzip
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          unzip -q cmdtools.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_ENV
+
+      - name: Accept Android SDK licenses & install build tools
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+      - name: Install Gradle 8.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O gradle.zip
+          unzip -q gradle.zip -d $HOME
+          echo "$HOME/gradle-8.2/bin" >> $GITHUB_PATH
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          gradle assembleDebug --stacktrace --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace --no-daemon
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          gradle assembleRelease --stacktrace --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
@@ -76,13 +99,12 @@ jobs:
           body: |
             ## 🔥 Phoenix Fire — Ready to Install
 
-            **Download the APK below and transfer it to your Android phone.**
+            Download the APK below and transfer to your Android phone.
 
-            ### How to install
-            1. Download `PhoenixFire-v*.apk`
+            1. Download PhoenixFire-v*.apk
             2. Transfer to your Android phone
-            3. Open the file on your phone → tap Install
-            4. Open Phoenix Fire → tap Find My Firestick → pick an app → Send!
+            3. Open the file → tap Install
+            4. Open Phoenix Fire → Find Firestick → Pick app → Send!
 
             Built from: ${{ github.sha }}
           files: app/build/outputs/apk/release/PhoenixFire-v${{ steps.version.outputs.VERSION }}.apk
