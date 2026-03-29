@@ -32,6 +32,20 @@ android {
     lint {
         abortOnError false
     }
+
+    packagingOptions {
+        resources {
+            excludes += [
+                'META-INF/LICENSE.md',
+                'META-INF/LICENSE-notice.md',
+                'META-INF/NOTICE.md',
+                'META-INF/NOTICE',
+                'META-INF/LICENSE',
+                'META-INF/DEPENDENCIES',
+                'META-INF/*.kotlin_module'
+            ]
+        }
+    }
 }
 
 dependencies {
