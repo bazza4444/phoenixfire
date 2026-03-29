@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fire_orange">#FF6B00</color>
+    <color name="fire_red">#CC2200</color>
+    <color name="fire_deep">#8B1A00</color>
+    <color name="fire_yellow">#FFB300</color>
+    <color name="bg_dark">#1A1A1A</color>
+    <color name="card_bg">#2A2A2A</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

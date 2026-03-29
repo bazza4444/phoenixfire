@@ -1,0 +1,112 @@
+{
+  "apps": [
+    {
+      "name": "Kodi",
+      "version": "21.0",
+      "description": "The ultimate open source media center. Stream anything, play local files, add-ons and more.",
+      "icon_url": "",
+      "apk_url": "https://mirrors.kodi.tv/releases/android/arm64-v8a/kodi-21.0-Omega-arm64-v8a.apk",
+      "package_name": "org.xbmc.kodi",
+      "category": "Media Players"
+    },
+    {
+      "name": "VLC Media Player",
+      "version": "3.5.4",
+      "description": "Free, open source video and audio player. Plays almost any file format.",
+      "icon_url": "",
+      "apk_url": "https://get.videolan.org/vlc-android/3.5.4/VLC-Android-3.5.4-arm64-v8a.apk",
+      "package_name": "org.videolan.vlc",
+      "category": "Media Players"
+    },
+    {
+      "name": "MX Player",
+      "version": "1.82.5",
+      "description": "Powerful video player with hardware acceleration and subtitle support.",
+      "icon_url": "",
+      "apk_url": "https://apkpure.com/mx-player/com.mxtech.videoplayer.ad/download",
+      "package_name": "com.mxtech.videoplayer.ad",
+      "category": "Media Players"
+    },
+    {
+      "name": "Downloader by AFTVnews",
+      "version": "1.16",
+      "description": "The original sideloading app for Fire TV. Browse and download any APK directly on your Firestick.",
+      "icon_url": "",
+      "apk_url": "https://www.firesticktricks.com/downloader",
+      "package_name": "com.esaba.downloader",
+      "category": "Utilities"
+    },
+    {
+      "name": "button Mapper",
+      "version": "2.20",
+      "description": "Remap Firestick remote buttons to do whatever you want.",
+      "icon_url": "",
+      "apk_url": "https://apkpure.com/button-mapper-remap-your-keys/flar2.homebutton/download",
+      "package_name": "flar2.homebutton",
+      "category": "Utilities"
+    },
+    {
+      "name": "Wolf Launcher",
+      "version": "0.9.5",
+      "description": "Clean, fast custom home screen launcher for Fire TV devices.",
+      "icon_url": "",
+      "apk_url": "https://apkpure.com/wolf-launcher/com.wolf.launcher/download",
+      "package_name": "com.wolf.launcher",
+      "category": "Launchers"
+    },
+    {
+      "name": "Smart YouTube TV",
+      "version": "6.17.49",
+      "description": "YouTube for your TV — no ads, background play, 4K support.",
+      "icon_url": "",
+      "apk_url": "https://github.com/yuliskov/SmartTube/releases/latest/download/smarttube_stable.apk",
+      "package_name": "com.liskovsoft.videomanager.antv",
+      "category": "Streaming"
+    },
+    {
+      "name": "Stremio",
+      "version": "1.6.12",
+      "description": "One place for all your video content. Movies, series, live TV and more.",
+      "icon_url": "",
+      "apk_url": "https://www.stremio.com/downloads/android-tv",
+      "package_name": "com.stremio.one",
+      "category": "Streaming"
+    },
+    {
+      "name": "Plex",
+      "version": "Latest",
+      "description": "Stream your personal media collection plus free movies and TV.",
+      "icon_url": "",
+      "apk_url": "https://downloads.plex.tv/plex-media-player/latest/android-tv",
+      "package_name": "com.plexapp.android",
+      "category": "Streaming"
+    },
+    {
+      "name": "Jellyfin for Android TV",
+      "version": "0.16.7",
+      "description": "Free and open source media server client. Self-hosted Netflix alternative.",
+      "icon_url": "",
+      "apk_url": "https://github.com/jellyfin/jellyfin-androidtv/releases/latest/download/jellyfin-androidtv-v0.16.7-release.apk",
+      "package_name": "org.jellyfin.androidtv",
+      "category": "Streaming"
+    },
+    {
+      "name": "X-Plore File Manager",
+      "version": "4.38",
+      "description": "Dual-pane file manager. Browse local files, USB drives, network shares and cloud storage.",
+      "icon_url": "",
+      "apk_url": "https://apkpure.com/x-plore-file-manager/com.lonelycatgames.Xplore/download",
+      "package_name": "com.lonelycatgames.Xplore",
+      "category": "Utilities"
+    },
+    {
+      "name": "Your Custom App",
+      "version": "1.0",
+      "description": "Replace this with your own app — edit app_list.json on GitHub!",
+      "icon_url": "",
+      "apk_url": "https://your-server.com/yourapp.apk",
+      "package_name": "com.your.app",
+      "category": "My Apps"
+    }
+  ]
+}

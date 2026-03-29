@@ -1,0 +1,3 @@
+-keep class com.phoenixfire.installer.** { *; }
+-keep class dadb.** { *; }
+-dontwarn dadb.**
