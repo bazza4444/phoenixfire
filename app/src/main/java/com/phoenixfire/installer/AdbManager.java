@@ -27,6 +27,7 @@ public class AdbManager {
     private static final String TAG = "AdbManager";
     private static final int ADB_PORT = 5555;
     private static final int SCAN_TIMEOUT_MS = 400;
+    private static final int MAX_RETRIES = 3;
 
     public interface ScanCallback {
         void onDeviceFound(FirestickDevice device);
@@ -98,17 +99,29 @@ public class AdbManager {
         return subnets;
     }
 
+    /**
+     * Detect device type from its properties for a friendly name
+     */
+    private static String detectDeviceType(Dadb dadb, String ip) {
+        try {
+            AdbShellResponse r = dadb.shell("getprop ro.product.model");
+            String model = r.getAllOutput().trim();
+            if (!model.isEmpty()) return model + " (" + ip + ")";
+        } catch (Exception ignored) {}
+        return "Android Device (" + ip + ")";
+    }
+
     public static void scanForDevices(Context context, ScanCallback callback) {
         new Thread(() -> {
             WifiManager wm = (WifiManager)
                 context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             if (wm == null || !wm.isWifiEnabled()) {
-                callback.onError("WiFi is not enabled.\n\nConnect to the same WiFi as your Firestick.");
+                callback.onError("WiFi is not enabled.\n\nConnect to the same WiFi as your device.");
                 return;
             }
             List<String> subnets = getAllSubnets(context);
             if (subnets.isEmpty()) {
-                callback.onError("No WiFi network detected.\n\nUse the manual IP box below.\nFind IP: Settings → My Fire TV → About → Network");
+                callback.onError("No WiFi network detected.\n\nUse the manual IP box below.\nFind IP on device: Settings → About → Network / IP Address");
                 return;
             }
             List<FirestickDevice> found = new ArrayList<>();
@@ -127,7 +140,7 @@ public class AdbManager {
                                 seen.add(ip);
                             }
                             FirestickDevice dev = new FirestickDevice(
-                                    ip, "Amazon Fire TV (" + ip + ")", ADB_PORT);
+                                    ip, "Android Device (" + ip + ")", ADB_PORT);
                             synchronized (found) { found.add(dev); }
                             callback.onDeviceFound(dev);
                         } catch (Exception ignored) {}
@@ -146,7 +159,7 @@ public class AdbManager {
                                    File cacheDir, Context context) {
         new Thread(() -> {
             try {
-                // 1. Download
+                // 1. Download APK
                 callback.onProgress(5, "Starting download...");
                 File apkFile = new File(cacheDir,
                         app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
@@ -167,7 +180,7 @@ public class AdbManager {
                 }
                 String ct = conn.getContentType();
                 if (ct != null && ct.contains("text/html")) {
-                    callback.onError("That URL points to a webpage, not an APK.\nPlease use a direct download link.");
+                    callback.onError("That URL returns a webpage, not an APK.\nCheck the download URL in app_list.json.");
                     conn.disconnect();
                     return;
                 }
@@ -195,83 +208,96 @@ public class AdbManager {
                 callback.onProgress(67, "Setting up secure connection...");
                 AdbKeyPair keyPair = getOrCreateKeyPair(context);
 
-                // 3. Connect
-                callback.onProgress(70, "Connecting to Firestick at " + deviceIp + "...");
-                Dadb dadb;
-                try {
-                    dadb = Dadb.create(deviceIp, devicePort, keyPair);
-                } catch (Exception ce) {
-                    callback.onError("Cannot connect to Firestick.\n\n" +
-                        "If a popup appeared — tap ALLOW and try again.\n\n" +
-                        "Check: Settings → My Fire TV → Developer Options → ADB Debugging ON\n\n" +
-                        "Error: " + ce.getMessage());
-                    return;
+                // 3. Connect with retry on broken pipe
+                callback.onProgress(70, "Connecting to device at " + deviceIp + "...");
+                boolean installSuccess = false;
+                String lastError = "";
+
+                for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                    if (attempt > 1) {
+                        callback.onProgress(70, "Retrying connection (attempt " + attempt + "/" + MAX_RETRIES + ")...");
+                        Thread.sleep(2000); // wait before retry
+                    }
+
+                    Dadb dadb = null;
+                    try {
+                        dadb = Dadb.create(deviceIp, devicePort, keyPair);
+
+                        // 4. Push APK
+                        callback.onProgress(73, "Transferring APK to device...");
+                        String remotePath = "/data/local/tmp/phoenix_install.apk";
+                        dadb.push(apkFile, remotePath, 0644, System.currentTimeMillis());
+                        Log.d(TAG, "Push complete on attempt " + attempt);
+
+                        // 5. Install
+                        callback.onProgress(86, "Installing " + app.getName() + "...");
+                        AdbShellResponse installResponse = dadb.shell("pm install -r " + remotePath);
+                        String installOutput = installResponse.getAllOutput().trim();
+                        Log.d(TAG, "pm install output: [" + installOutput + "]");
+
+                        // 6. Clean up
+                        try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
+
+                        // 7. Verify
+                        callback.onProgress(95, "Verifying installation...");
+                        boolean verified = false;
+                        try {
+                            AdbShellResponse checkResp = dadb.shell(
+                                "pm list packages | grep " + app.getPackageName());
+                            verified = checkResp.getAllOutput().trim()
+                                    .contains(app.getPackageName());
+                        } catch (Exception ig) {}
+
+                        try { dadb.close(); } catch (Exception ig) {}
+
+                        // 8. Check result
+                        if (verified || installOutput.toLowerCase().contains("success")) {
+                            installSuccess = true;
+                            break;
+                        } else if (installOutput.contains("INSTALL_FAILED_ALREADY_EXISTS")) {
+                            installSuccess = true;
+                            break;
+                        } else if (installOutput.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE")) {
+                            lastError = "Not enough storage on device.\n\nFree up space and try again.";
+                            break; // No point retrying storage issues
+                        } else if (installOutput.contains("INSTALL_PARSE_FAILED")) {
+                            lastError = "APK not compatible with this device.\n\nThe app may not support this Android version.";
+                            break; // No point retrying parse errors
+                        } else if (!installOutput.isEmpty()) {
+                            lastError = installOutput;
+                            // Retry for unknown errors
+                        }
+
+                    } catch (Exception attemptEx) {
+                        lastError = attemptEx.getMessage();
+                        Log.e(TAG, "Attempt " + attempt + " failed: " + lastError);
+                        if (dadb != null) {
+                            try { dadb.close(); } catch (Exception ig) {}
+                        }
+                        // Broken pipe or connection reset — retry
+                        if (lastError != null && (
+                                lastError.contains("Broken pipe") ||
+                                lastError.contains("Connection reset") ||
+                                lastError.contains("ECONNRESET") ||
+                                lastError.contains("EPIPE"))) {
+                            Log.d(TAG, "Broken pipe — will retry");
+                            continue;
+                        }
+                        // Other errors — don't retry
+                        break;
+                    }
                 }
 
-                // 4. Push APK
-                callback.onProgress(73, "Transferring APK to Firestick...");
-                String remotePath = "/data/local/tmp/phoenix_install.apk";
-                try {
-                    dadb.push(apkFile, remotePath, 0644, System.currentTimeMillis());
-                    Log.d(TAG, "Push complete");
-                } catch (Exception pushEx) {
-                    try { dadb.close(); } catch (Exception ig) {}
-                    callback.onError("Failed to transfer APK.\n\nError: " + pushEx.getMessage());
-                    return;
-                }
-
-                // 5. Run pm install -r (simple, no extra flags)
-                callback.onProgress(86, "Installing " + app.getName() + "...");
-                String installOutput = "";
-                try {
-                    AdbShellResponse installResponse = dadb.shell("pm install -r " + remotePath);
-                    installOutput = installResponse.getAllOutput().trim();
-                    Log.d(TAG, "pm install output: [" + installOutput + "]");
-                } catch (Exception shellEx) {
-                    Log.e(TAG, "Shell error: " + shellEx.getMessage());
-                    try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
-                    try { dadb.close(); } catch (Exception ig) {}
-                    callback.onError("Install command failed.\n\nError: " + shellEx.getMessage());
-                    return;
-                }
-
-                // 6. Clean up temp file
-                try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
-
-                // 7. Verify by checking if package is now installed
-                callback.onProgress(95, "Verifying installation...");
-                boolean verified = false;
-                try {
-                    AdbShellResponse checkResp = dadb.shell(
-                        "pm list packages | grep " + app.getPackageName());
-                    String checkOut = checkResp.getAllOutput().trim();
-                    Log.d(TAG, "Package check: [" + checkOut + "]");
-                    verified = checkOut.contains(app.getPackageName());
-                } catch (Exception checkEx) {
-                    Log.e(TAG, "Verify failed: " + checkEx.getMessage());
-                }
-
-                try { dadb.close(); } catch (Exception ig) {}
-
-                // 8. Report result based on verification + output
-                if (verified) {
+                if (installSuccess) {
                     callback.onProgress(100, "✅ Installed successfully!");
                     callback.onSuccess(app.getName());
-                } else if (installOutput.toLowerCase().contains("success")) {
-                    // pm said success but package check failed — still report success
-                    callback.onProgress(100, "✅ Installed successfully!");
-                    callback.onSuccess(app.getName());
-                } else if (installOutput.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE")) {
-                    callback.onError("Not enough storage on Firestick.\n\nFree up space and try again.");
-                } else if (installOutput.contains("INSTALL_PARSE_FAILED")) {
-                    callback.onError("APK not compatible with your Firestick.\n\nTry downloading again — it may be corrupted.");
-                } else if (installOutput.contains("INSTALL_FAILED_ALREADY_EXISTS")) {
-                    callback.onProgress(100, "✅ Already installed!");
-                    callback.onSuccess(app.getName());
-                } else if (!installOutput.isEmpty()) {
-                    callback.onError("Install failed.\n\nReason: " + installOutput);
                 } else {
-                    callback.onError("Install result unknown.\n\nPlease check your Firestick manually in:\nSettings → Applications → Manage Installed Applications");
+                    callback.onError("Install failed after " + MAX_RETRIES + " attempts.\n\n" +
+                        "Last error: " + lastError + "\n\n" +
+                        "Please check:\n" +
+                        "• ADB Debugging is ON\n" +
+                        "• Device and phone on same WiFi\n" +
+                        "• Tap ALLOW if a popup appeared on your device");
                 }
 
             } catch (Exception e) {
