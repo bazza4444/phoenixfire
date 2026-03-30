@@ -10,7 +10,8 @@ import com.google.android.material.button.MaterialButton;
 
 public class AppDetailActivity extends AppCompatActivity {
 
-    private TextView tvAppName, tvVersion, tvDescription, tvStatus, tvTargetDevice;
+    private TextView tvAppName, tvVersion, tvDescription, tvStatus,
+                     tvTargetDevice, tvRetryInfo;
     private MaterialButton btnInstall;
     private ProgressBar progressBar;
     private Handler mainHandler;
@@ -20,22 +21,23 @@ public class AppDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_app_detail);
 
-        tvAppName = findViewById(R.id.tvAppName);
-        tvVersion = findViewById(R.id.tvVersion);
-        tvDescription = findViewById(R.id.tvDescription);
-        tvStatus = findViewById(R.id.tvStatus);
+        tvAppName      = findViewById(R.id.tvAppName);
+        tvVersion      = findViewById(R.id.tvVersion);
+        tvDescription  = findViewById(R.id.tvDescription);
+        tvStatus       = findViewById(R.id.tvStatus);
         tvTargetDevice = findViewById(R.id.tvTargetDevice);
-        btnInstall = findViewById(R.id.btnInstall);
-        progressBar = findViewById(R.id.progressBar);
-        mainHandler = new Handler(Looper.getMainLooper());
+        tvRetryInfo    = findViewById(R.id.tvRetryInfo);
+        btnInstall     = findViewById(R.id.btnInstall);
+        progressBar    = findViewById(R.id.progressBar);
+        mainHandler    = new Handler(Looper.getMainLooper());
 
-        String name = getIntent().getStringExtra("app_name");
-        String version = getIntent().getStringExtra("app_version");
-        String description = getIntent().getStringExtra("app_description");
-        String url = getIntent().getStringExtra("app_url");
-        String packageName = getIntent().getStringExtra("app_package");
-        String deviceIp = getIntent().getStringExtra("device_ip");
-        int devicePort = getIntent().getIntExtra("device_port", 5555);
+        String name       = getIntent().getStringExtra("app_name");
+        String version    = getIntent().getStringExtra("app_version");
+        String description= getIntent().getStringExtra("app_description");
+        String url        = getIntent().getStringExtra("app_url");
+        String packageName= getIntent().getStringExtra("app_package");
+        String deviceIp   = getIntent().getStringExtra("device_ip");
+        int devicePort    = getIntent().getIntExtra("device_port", 5555);
         String deviceName = getIntent().getStringExtra("device_name");
 
         tvAppName.setText(name);
@@ -49,6 +51,7 @@ public class AppDetailActivity extends AppCompatActivity {
             btnInstall.setEnabled(false);
             progressBar.setVisibility(View.VISIBLE);
             progressBar.setProgress(0);
+            tvRetryInfo.setVisibility(View.VISIBLE);
             tvStatus.setText("Starting...");
 
             AdbManager.installApp(deviceIp, devicePort, app,
@@ -64,7 +67,9 @@ public class AppDetailActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(String appName) {
                         mainHandler.post(() -> {
-                            tvStatus.setText("✅ " + appName + " installed successfully on your Firestick!");
+                            tvStatus.setText("✅ " + appName +
+                                " installed successfully on your device!");
+                            tvRetryInfo.setVisibility(View.GONE);
                             btnInstall.setText("✓ INSTALLED");
                             btnInstall.setEnabled(false);
                         });
@@ -74,6 +79,7 @@ public class AppDetailActivity extends AppCompatActivity {
                     public void onError(String message) {
                         mainHandler.post(() -> {
                             tvStatus.setText("❌ " + message);
+                            tvRetryInfo.setVisibility(View.GONE);
                             btnInstall.setEnabled(true);
                             btnInstall.setText("🚀  TRY AGAIN");
                             progressBar.setVisibility(View.GONE);
