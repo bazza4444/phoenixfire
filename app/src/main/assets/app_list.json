@@ -1,58 +1,85 @@
 {
   "apps": [
     {
-      "name": "Button Mapper (TEST - 3MB)",
-      "version": "2.20",
-      "description": "Small test app - only 3MB. Use this to test the installer works.",
-      "icon_url": "",
-      "apk_url": "https://github.com/flar2/ElementalX-m9/raw/master/buttonmapper.apk",
-      "package_name": "flar2.homebutton",
-      "category": "Test"
+      "name": "Phoenix IBO New",
+      "version": "1.18",
+      "description": "Phoenix IBO New - Latest version with enhanced features.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/ibonew.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/Phoenix%20IBO_1.18.apk",
+      "package_name": "com.phoenix.ibonew",
+      "category": "Phoenix Apps"
     },
     {
-      "name": "Kodi",
-      "version": "21.0",
-      "description": "The ultimate open source media center. Stream anything, play local files, add-ons and more.",
-      "icon_url": "",
-      "apk_url": "https://mirrors.kodi.tv/releases/android/arm64-v8a/kodi-21.0-Omega-arm64-v8a.apk",
-      "package_name": "org.xbmc.kodi",
-      "category": "Media Players"
+      "name": "Phoenix Smarters V4",
+      "version": "4.0.5",
+      "description": "Phoenix Smarters V4 - Latest version.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/phoenixgreenv4.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/PhoenixSmartV4_4.0.5.apk",
+      "package_name": "com.phoenix.smartersv4",
+      "category": "Phoenix Apps"
     },
     {
-      "name": "VLC Media Player",
-      "version": "3.5.4",
-      "description": "Free and open source video and audio player.",
-      "icon_url": "",
-      "apk_url": "https://get.videolan.org/vlc-android/3.5.4/VLC-Android-3.5.4-arm64-v8a.apk",
-      "package_name": "org.videolan.vlc",
-      "category": "Media Players"
+      "name": "Phoenix XC Glass",
+      "version": "6.0",
+      "description": "Phoenix XCIPTV Glass V6.0 - Latest version.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/phoenixskyglass.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/PhoenixXC%20Glass_6.0%20(1).apk",
+      "package_name": "com.phoenix.xcglass",
+      "category": "Phoenix Apps"
     },
     {
-      "name": "SmartTube",
-      "version": "Latest",
-      "description": "YouTube for TV — no ads, background play, 4K.",
-      "icon_url": "",
-      "apk_url": "https://github.com/yuliskov/SmartTube/releases/download/latest/smarttube_stable.apk",
-      "package_name": "com.liskovsoft.videomanager.antv",
-      "category": "Streaming"
+      "name": "Phoenix XC",
+      "version": "5.01",
+      "description": "Phoenix XCIPTV - Version 5.0.1.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/phoenixxcblue.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/PHOENIX%20XC_5.0.1.apk",
+      "package_name": "com.phoenix.xc",
+      "category": "Phoenix Apps"
     },
     {
-      "name": "Jellyfin",
-      "version": "0.16.7",
-      "description": "Free open source media server client. Your personal Netflix.",
-      "icon_url": "",
-      "apk_url": "https://github.com/jellyfin/jellyfin-androidtv/releases/download/v0.16.7/jellyfin-androidtv-v0.16.7-release.apk",
-      "package_name": "org.jellyfin.androidtv",
-      "category": "Streaming"
+      "name": "Phoenix Glass Smarters",
+      "version": "3.01",
+      "description": "Phoenix Smarters Glass - Premium glass UI experience.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/Phoenix%20Smarters%20Glass.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/Smarters%20Glass_V3.apk",
+      "package_name": "com.phoenix.glasssmarters",
+      "category": "Phoenix Apps"
     },
     {
-      "name": "Downloader by AFTVnews",
-      "version": "1.16",
-      "description": "The original sideloading app for Fire TV.",
-      "icon_url": "",
-      "apk_url": "https://dl.aftvnews.com/Downloader.apk",
-      "package_name": "com.esaba.downloader",
-      "category": "Utilities"
+      "name": "Phoenix Tivimate",
+      "version": "5.1.0",
+      "description": "Phoenix Tivimate - Premium IPTV player, latest version.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/Tivimate.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/TiviMate_5.1.0(BAZLatest)%20(2).apk",
+      "package_name": "ar.tvplayer.tv",
+      "category": "Phoenix Apps"
+    },
+    {
+      "name": "Phoenix IBO",
+      "version": "3.9",
+      "description": "Phoenix IBO With Ads - Version 3.9.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/ibo.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/EasyIBO3.9originalupdated%20(4).apk",
+      "package_name": "com.ibo.player",
+      "category": "Phoenix Apps"
+    },
+    {
+      "name": "IBO VOD",
+      "version": "4.3",
+      "description": "IBO VOD Only Player - Version 4.3.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/ibovod.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/Ibo%20Player%20Pro_4.3VOD.apk",
+      "package_name": "com.ibo.vodplayer",
+      "category": "Phoenix Apps"
+    },
+    {
+      "name": "SkySmart2",
+      "version": "2.2.4",
+      "description": "Phoenix DarkSky22 - Premium smart player.",
+      "icon_url": "https://wizardapk.co.uk/panel/images/phoenix/darksky.png",
+      "apk_url": "https://phoenixhosting.online/phoenix/SkySmart2_2.2.4.apk",
+      "package_name": "com.skysmart.player",
+      "category": "Phoenix Apps"
     }
   ]
 }
