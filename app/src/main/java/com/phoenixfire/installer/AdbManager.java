@@ -146,7 +146,7 @@ public class AdbManager {
                                    File cacheDir, Context context) {
         new Thread(() -> {
             try {
-                // 1. Download APK
+                // 1. Download
                 callback.onProgress(5, "Starting download...");
                 File apkFile = new File(cacheDir,
                         app.getPackageName().replaceAll("[^a-zA-Z0-9._]", "_") + ".apk");
@@ -208,93 +208,70 @@ public class AdbManager {
                     return;
                 }
 
-                // 4. Push APK to Firestick
+                // 4. Push APK
                 callback.onProgress(73, "Transferring APK to Firestick...");
                 String remotePath = "/data/local/tmp/phoenix_install.apk";
                 try {
                     dadb.push(apkFile, remotePath, 0644, System.currentTimeMillis());
                     Log.d(TAG, "Push complete");
                 } catch (Exception pushEx) {
-                    try { dadb.close(); } catch (Exception ignored) {}
+                    try { dadb.close(); } catch (Exception ig) {}
                     callback.onError("Failed to transfer APK.\n\nError: " + pushEx.getMessage());
                     return;
                 }
 
-                // 5. Verify the file arrived on Firestick
-                callback.onProgress(83, "Verifying transfer...");
-                try {
-                    AdbShellResponse lsResponse = dadb.shell("ls -la " + remotePath);
-                    Log.d(TAG, "ls output: " + lsResponse.getAllOutput());
-                } catch (Exception ignored) {}
-
-                // 6. Run pm install and READ the output to confirm success
+                // 5. Run pm install -r (simple, no extra flags)
                 callback.onProgress(86, "Installing " + app.getName() + "...");
                 String installOutput = "";
                 try {
-                    AdbShellResponse installResponse = dadb.shell(
-                        "pm install -r --allow-test " + remotePath);
-                    installOutput = installResponse.getAllOutput();
-                    Log.d(TAG, "pm install output: " + installOutput);
+                    AdbShellResponse installResponse = dadb.shell("pm install -r " + remotePath);
+                    installOutput = installResponse.getAllOutput().trim();
+                    Log.d(TAG, "pm install output: [" + installOutput + "]");
                 } catch (Exception shellEx) {
                     Log.e(TAG, "Shell error: " + shellEx.getMessage());
-                    // Try without flags if first attempt failed
-                    try {
-                        AdbShellResponse retryResponse = dadb.shell(
-                            "pm install -r " + remotePath);
-                        installOutput = retryResponse.getAllOutput();
-                        Log.d(TAG, "Retry pm install output: " + installOutput);
-                    } catch (Exception retryEx) {
-                        try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
-                        try { dadb.close(); } catch (Exception ig) {}
-                        callback.onError("Install command failed.\n\nError: " + retryEx.getMessage());
-                        return;
-                    }
+                    try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
+                    try { dadb.close(); } catch (Exception ig) {}
+                    callback.onError("Install command failed.\n\nError: " + shellEx.getMessage());
+                    return;
                 }
 
-                // 7. Clean up temp file
-                try { dadb.shell("rm " + remotePath); } catch (Exception ignored) {}
+                // 6. Clean up temp file
+                try { dadb.shell("rm " + remotePath); } catch (Exception ig) {}
 
-                // 8. Check output for success or failure
-                callback.onProgress(97, "Checking result...");
-                if (installOutput.toLowerCase().contains("success")) {
-                    dadb.close();
+                // 7. Verify by checking if package is now installed
+                callback.onProgress(95, "Verifying installation...");
+                boolean verified = false;
+                try {
+                    AdbShellResponse checkResp = dadb.shell(
+                        "pm list packages | grep " + app.getPackageName());
+                    String checkOut = checkResp.getAllOutput().trim();
+                    Log.d(TAG, "Package check: [" + checkOut + "]");
+                    verified = checkOut.contains(app.getPackageName());
+                } catch (Exception checkEx) {
+                    Log.e(TAG, "Verify failed: " + checkEx.getMessage());
+                }
+
+                try { dadb.close(); } catch (Exception ig) {}
+
+                // 8. Report result based on verification + output
+                if (verified) {
                     callback.onProgress(100, "✅ Installed successfully!");
                     callback.onSuccess(app.getName());
-                } else if (installOutput.toLowerCase().contains("failure")
-                        || installOutput.toLowerCase().contains("error")) {
-                    dadb.close();
-                    // Parse the failure reason
-                    String reason = installOutput.trim();
-                    if (reason.contains("INSTALL_FAILED_ALREADY_EXISTS")) {
-                        // Already installed - that's fine!
-                        callback.onProgress(100, "✅ Already installed!");
-                        callback.onSuccess(app.getName());
-                    } else if (reason.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE")) {
-                        callback.onError("Not enough storage on your Firestick.\n\nFree up space and try again.");
-                    } else if (reason.contains("INSTALL_PARSE_FAILED")) {
-                        callback.onError("The APK file is corrupted or not compatible with your Firestick.\n\nTry again — it may have downloaded incorrectly.");
-                    } else {
-                        callback.onError("Install failed.\n\nReason: " + reason);
-                    }
+                } else if (installOutput.toLowerCase().contains("success")) {
+                    // pm said success but package check failed — still report success
+                    callback.onProgress(100, "✅ Installed successfully!");
+                    callback.onSuccess(app.getName());
+                } else if (installOutput.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE")) {
+                    callback.onError("Not enough storage on Firestick.\n\nFree up space and try again.");
+                } else if (installOutput.contains("INSTALL_PARSE_FAILED")) {
+                    callback.onError("APK not compatible with your Firestick.\n\nTry downloading again — it may be corrupted.");
+                } else if (installOutput.contains("INSTALL_FAILED_ALREADY_EXISTS")) {
+                    callback.onProgress(100, "✅ Already installed!");
+                    callback.onSuccess(app.getName());
+                } else if (!installOutput.isEmpty()) {
+                    callback.onError("Install failed.\n\nReason: " + installOutput);
                 } else {
-                    // Output unclear — check if app is actually installed
-                    try {
-                        AdbShellResponse checkResponse = dadb.shell(
-                            "pm list packages | grep " + app.getPackageName());
-                        String checkOutput = checkResponse.getAllOutput();
-                        Log.d(TAG, "Package check: " + checkOutput);
-                        dadb.close();
-                        if (checkOutput.contains(app.getPackageName())) {
-                            callback.onProgress(100, "✅ Installed successfully!");
-                            callback.onSuccess(app.getName());
-                        } else {
-                            callback.onError("Install result unclear.\n\nOutput: " + installOutput
-                                + "\n\nCheck your Firestick manually.");
-                        }
-                    } catch (Exception checkEx) {
-                        try { dadb.close(); } catch (Exception ig) {}
-                        callback.onError("Could not verify install.\n\nOutput: " + installOutput);
-                    }
+                    callback.onError("Install result unknown.\n\nPlease check your Firestick manually in:\nSettings → Applications → Manage Installed Applications");
                 }
 
             } catch (Exception e) {
